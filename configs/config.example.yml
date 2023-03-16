@@ -1,0 +1,5 @@
+storage:
+  dsn: redis://localhost:6379/0
+telegram:
+  api_id: 123
+  api_hash: 123abc456
