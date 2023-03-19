@@ -1,5 +1,6 @@
+import teleredis
 import app.core.models as models
-from app.core.storage import storage
+from .storage import storage, storage_sync
 
 
 class AccountsRepository:
@@ -24,3 +25,21 @@ class AccountsRepository:
     @classmethod
     async def delete(cls, phone: str):
         await storage.hdel(cls.KEY, phone)
+
+
+class SessionsRepository:
+    KEY = teleredis.teleredis.DEFAULT_HIVE_PREFIX
+
+    @classmethod
+    async def is_exists(cls, phone: str) -> bool:
+        keys = await storage.keys(f"{cls.KEY}:{phone}:*")
+        return len(keys) > 0
+
+    @classmethod
+    async def get(cls, phone: str):
+        return teleredis.RedisSession(phone, storage_sync)
+
+    @classmethod
+    async def delete(cls, phone: str):
+        keys = await storage.keys(f"{cls.KEY}:{phone}:*")
+        return await storage.delete(*keys)

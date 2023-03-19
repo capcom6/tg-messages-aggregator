@@ -1,0 +1,2 @@
+class SessionAlreadyActiveError(Exception):
+    pass
