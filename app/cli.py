@@ -32,3 +32,12 @@ def start(host: str, port: int):
     import uvicorn
 
     uvicorn.run("app.api:server", host=host, port=port, reload=True)
+
+
+@cli.command()
+@make_sync
+async def bot():
+    """Start Telegram Bot"""
+    from app.bot import run
+
+    await run()

@@ -10,4 +10,7 @@ start:
 start-api:
 	python -m app start
 
-.PHONY: init init-dev start
+start-bot:
+	python -m app bot
+
+.PHONY: init init-dev start start-api start-bot

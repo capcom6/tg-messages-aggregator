@@ -3,6 +3,12 @@ if __name__ == "__main__":
 
     cli()
 
+    # l = storage.lrange("accounts", 0, -1)
+    # print(l)
+
+    # a = Account.parse_raw(l[0])
+    # print(repositories.AccountsRepository.select())
+
 # import os
 # from telethon import TelegramClient
 # from telethon.errors.rpcerrorlist import SessionPasswordNeededError
