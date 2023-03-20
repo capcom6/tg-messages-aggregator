@@ -33,13 +33,15 @@ class SessionsRepository:
     @classmethod
     async def is_exists(cls, phone: str) -> bool:
         keys = await storage.keys(f"{cls.KEY}:{phone}:*")
-        return len(keys) > 0
+        return len(keys) > 1
 
     @classmethod
     async def get(cls, phone: str):
         return teleredis.RedisSession(phone, storage_sync)
 
     @classmethod
-    async def delete(cls, phone: str):
+    async def delete(cls, phone: str) -> bool:
         keys = await storage.keys(f"{cls.KEY}:{phone}:*")
-        return await storage.delete(*keys)
+        if len(keys) == 0:
+            return False
+        return await storage.delete(*keys) > 0

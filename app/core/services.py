@@ -1,5 +1,6 @@
 import contextlib
-from telethon import TelegramClient
+from teleredis import RedisSession
+from telethon import TelegramClient, sessions
 from telethon.errors.rpcerrorlist import SessionPasswordNeededError
 
 from app.config import config
@@ -28,16 +29,12 @@ class AccountsService:
 
     @classmethod
     async def insert(cls, account: Account) -> bool:
-        result = await AccountsRepository.insert(account=account)
-        if result:
-            await AccountsUpdatedChannel.notify()
-        return result
+        return await AccountsRepository.insert(account=account)
 
     @classmethod
     async def delete(cls, phone: str):
-        await SessionsRepository.delete(phone=phone)
+        await cls.session_delete(phone)
         await AccountsRepository.delete(phone=phone)
-        await AccountsUpdatedChannel.notify()
 
     @classmethod
     async def session_init(cls, phone: str) -> str:
@@ -45,7 +42,7 @@ class AccountsService:
         if is_active:
             raise SessionAlreadyActiveError
 
-        session = await SessionsRepository.get(phone)
+        session = await cls.session_get(phone)
         async with cls._tg_client(session) as client:
             req = await client.send_code_request(phone=phone)
         return req.phone_code_hash
@@ -54,7 +51,7 @@ class AccountsService:
     async def session_confirm(
         cls, request_id: str, phone: str, code: str, *, password: str | None
     ):
-        session = await SessionsRepository.get(phone)
+        session = await cls.session_get(phone)
         async with cls._tg_client(session) as client:
             try:
                 await client.sign_in(
@@ -71,20 +68,23 @@ class AccountsService:
                 else:
                     raise
 
-        await AccountsUpdatedChannel.notify()
+        await AccountsUpdatedChannel.notify(phone)
+
+    @classmethod
+    async def session_get(cls, phone: str):
+        return await SessionsRepository.get(phone)
 
     @classmethod
     async def session_delete(cls, phone: str):
-        session = await SessionsRepository.get(phone)
+        session = await cls.session_get(phone)
         async with cls._tg_client(session) as client:
             await client.log_out()
-        await SessionsRepository.delete(phone)
-
-        await AccountsUpdatedChannel.notify()
+        if await SessionsRepository.delete(phone):
+            await AccountsUpdatedChannel.notify(phone)
 
     @classmethod
     @contextlib.asynccontextmanager  # type: ignore
-    async def _tg_client(cls, session):
+    async def _tg_client(cls, session: sessions.Session):
         client = TelegramClient(
             session=session,
             api_id=config.telegram.api_id,

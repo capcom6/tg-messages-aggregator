@@ -6,8 +6,8 @@ class AccountsUpdatedChannel:
     KEY = "accounts:updated"
 
     @classmethod
-    async def notify(cls):
-        await storage.publish(cls.KEY, "updated")
+    async def notify(cls, phone: str):
+        await storage.publish(cls.KEY, phone)
 
     @classmethod
     async def listen(cls):
@@ -18,20 +18,5 @@ class AccountsUpdatedChannel:
                 if message := await channel.get_message(True):
                     yield message
                 await asyncio.sleep(1)
-                # try:
-                #     if message := await (
-                #         await asyncio.wait_for(
-                #             asyncio.get_event_loop().run_in_executor(
-                #                 None, channel.get_message
-                #             ),
-                #             timeout=1.0,
-                #         )
-                #     ):
-                #         if message["type"] == "message":
-                #             yield message
-                # except asyncio.TimeoutError:
-                #     pass
-                # finally:
-                #     await asyncio.sleep(1)
-        except KeyboardInterrupt:
-            return
+        finally:
+            await channel.close()
