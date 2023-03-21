@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 from teleredis import RedisSession
 from telethon import TelegramClient, sessions
@@ -95,3 +96,5 @@ class AccountsService:
         yield client
 
         await client.disconnect()  # type: ignore
+        # await asyncio.wait_for(client.disconnect(), None)
+        # await client.run_until_disconnected()

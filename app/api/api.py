@@ -1,3 +1,4 @@
+import logging
 import fastapi
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware

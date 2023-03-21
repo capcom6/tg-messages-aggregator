@@ -2,7 +2,11 @@ import asyncio
 import logging
 
 from telethon import TelegramClient, events
-from telethon.errors.rpcerrorlist import SessionExpiredError, PhoneNumberBannedError
+from telethon.errors.rpcerrorlist import (
+    SessionExpiredError,
+    PhoneNumberBannedError,
+    UnauthorizedError,
+)
 from app.core.channels import AccountsUpdatedChannel
 from app.core.services import AccountsService
 from app.config import config
@@ -15,6 +19,7 @@ async def listen_events():
     async for m in AccountsUpdatedChannel.listen():
         logging.info(m)
         phone = m["data"]
+        await asyncio.sleep(1)
         details = await AccountsService.get(phone)
         logging.info(details)
         if not details or not details.session.is_active:
@@ -28,6 +33,7 @@ async def listen_events():
             # del clients[phone]
 
         logging.warning("Start client!")
+        asyncio.create_task(start_client(phone))
         # await start_client(phone)
 
 
@@ -69,7 +75,19 @@ async def start_client(phone: str):
         await client.disconnect()
         return
 
+    logging.info("Connected")
     clients[phone] = client
+
+    try:
+        await client.run_until_disconnected()
+    except UnauthorizedError as e:
+        await AccountsService.session_delete(phone)
+        logging.error(e)
+    except Exception as e:
+        logging.warning(e)
+
+    del clients[phone]
+    logging.info("Disconnected")
 
 
 async def start_clients():
@@ -78,7 +96,10 @@ async def start_clients():
         details = await AccountsService.get(account.phone)
         if not details or not details.session.is_active:
             continue
-        await start_client(account.phone)
+
+        asyncio.create_task(start_client(account.phone))
+
+        logging.info("Next")
 
 
 async def run():
