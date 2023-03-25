@@ -1,20 +1,14 @@
-import logging
 import fastapi
-from fastapi.responses import HTMLResponse
 from fastapi.middleware.gzip import GZipMiddleware
 
+import app.core.models as models
 from app.core.errors import SessionAlreadyActiveError
+from app.core.services import AccountsService
 
 from .requests import PatchAccountSessionRequest, PostAccountRequest
 from .responses import GetAccountResponse, PostAccountSessionResponse
 
-import app.core.models as models
-from app.core.services import AccountsService
-
-server = fastapi.FastAPI(
-    # docs_url="/docs" if config.common.debug else None,
-    # redoc_url="/redoc" if config.common.debug else None,
-)
+server = fastapi.FastAPI()
 
 server.add_middleware(GZipMiddleware, minimum_size=1024)
 

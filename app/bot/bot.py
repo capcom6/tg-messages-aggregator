@@ -12,6 +12,7 @@ from app.core.services import AccountsService
 from app.config import config
 
 
+bot = TelegramClient("bot", config.telegram.api_id, config.telegram.api_hash)
 clients: dict[str, TelegramClient] = {}
 
 
@@ -29,8 +30,6 @@ async def listen_events():
             continue
         if phone in clients:
             continue
-            # await clients[phone].disconnect()
-            # del clients[phone]
 
         logging.warning("Start client!")
         asyncio.create_task(start_client(phone))
@@ -41,31 +40,26 @@ async def start_client(phone: str):
     session = await AccountsService.session_get(phone)
 
     client = TelegramClient(session, config.telegram.api_id, config.telegram.api_hash)
+    bot_id = (await bot.get_me()).id
+    print(bot_id)
 
     @client.on(events.NewMessage(incoming=True))
     async def handle_new_message(event):
         try:
-            print(event)
-            # print(f"New message from {account.phone}: {event.message.message}")
+            if event.message.peer_id.user_id == bot_id:
+                print("From bot")
+                return
+
+            print(event.message.peer_id.user_id)
             notify_message = f"New message from {phone}: {event.message.message}"
-            # notify_account_id = notify_account_ids[i]
-        # обрабатываем полученное сообщение и отправляем уведомление через Телеграм-бот
-        except SessionExpiredError:
-            # обработка ошибки, если сессия аккаунта пользователя истекла
-            print("Сессия пользователя истекла")
-            notify_message = "Сессия пользователя истекла"
-        except PhoneNumberBannedError:
-            # обработка ошибки, если аккаунт пользователя заблокирован
-            print("Аккаунт пользователя заблокирован")
-            notify_message = "Аккаунт пользователя заблокирован"
         except Exception as e:
             # обработка других ошибок
             print(f"Произошла ошибка: {e}")
             notify_message = f"Произошла ошибка: {e}"
-        finally:
-            print(notify_message)
-            # if notify_message:
-            #     await bot_client.send_message(notify_account_id, notify_message)
+
+        print(notify_message)
+        if notify_message:
+            await bot.send_message(config.bot.destination, notify_message)
 
     await client.connect()
 
@@ -105,6 +99,7 @@ async def start_clients():
 async def run():
     # asyncio.create_task()
     try:
+        await bot.start(bot_token=config.bot.token)
         await start_clients()
         await listen_events()
     finally:
@@ -114,4 +109,8 @@ async def run():
                 logging.info("Disconnected")
             except Exception as e:
                 print(e)
+        try:
+            await bot.disconnect()
+        except Exception as e:
+            print(e)
         logging.info("Done")

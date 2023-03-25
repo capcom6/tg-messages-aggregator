@@ -26,9 +26,15 @@ class Telegram(pydantic.BaseModel):
     api_hash: str
 
 
+class Bot(pydantic.BaseModel):
+    token: str
+    destination: int
+
+
 class Config(pydantic.BaseSettings):
     storage: Storage
     telegram: Telegram
+    bot: Bot
 
     class Config:
         env_file = ".env"
